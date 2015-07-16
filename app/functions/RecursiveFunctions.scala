@@ -1,4 +1,4 @@
-package folding
+package functions
 
 import scala.annotation.tailrec
 

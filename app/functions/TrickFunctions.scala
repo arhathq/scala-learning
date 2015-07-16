@@ -1,4 +1,4 @@
-package folding
+package functions
 
 /**
  * @author Alexander Kuleshov
