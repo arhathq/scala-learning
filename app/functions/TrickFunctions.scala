@@ -24,6 +24,10 @@ object TrickFunctions {
     }
   }
 
+  def doNothing(v: Null): Nothing = {
+    v.asInstanceOf[Nothing]
+  }
+
   def main(args: Array[String]) {
 
     val printer = printIn(printAll, "a")
@@ -31,5 +35,8 @@ object TrickFunctions {
 
     printer("ss", "q")
     printer2("ss", "q")
+
+    val v = null
+    println("doNothing(" + v + "): " + doNothing(v))
   }
 }

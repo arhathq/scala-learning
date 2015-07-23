@@ -58,7 +58,7 @@ object CurriedFunctions {
     val condition = (m: Metadata, d: Data) => m.name == d.name
 
 
-    val nodes = metaDataList.map ( (m) => process(condition)(m, dataList) )
+    val nodes = metaDataList.flatMap ( (m) => process(condition)(m, dataList) )
     for (node <- nodes) println(node)
   }
 }
@@ -124,7 +124,7 @@ object DataStorage {
           "service",
           Map(
             "type" -> "internet",
-            "vaue" -> "Record5"
+            "value" -> "Record5"
           ),
           List()
         ),
@@ -132,7 +132,7 @@ object DataStorage {
           "service",
           Map(
             "type" -> "tv",
-            "vaue" -> "Zafira"
+            "value" -> "Zafira"
           ),
           List()
         )
