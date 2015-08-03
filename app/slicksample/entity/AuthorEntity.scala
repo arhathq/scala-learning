@@ -19,33 +19,38 @@ class AuthorEntity(tag: Tag) extends Table[Author](tag, "AUTHOR") {
 
 object AuthorEntity {
 
-  val authors: TableQuery[AuthorEntity] = TableQuery[AuthorEntity]
+  val authors = TableQuery[AuthorEntity]
 
   def create(author: Author)(implicit db: Database) = {
+//    (authors returning authors.map(_.id) += author).statements.foreach(println)
     db.run(authors returning authors.map(_.id) += author)
   }
 
   def findById(id: Int)(implicit db: Database): Future[Option[Author]] = {
+//    authors.filter(_.id === id).result.headOption.statements.foreach(println)
     db.run(authors.filter(_.id === id).result.headOption)
   }
 
   def all()(implicit db: Database): Future[Seq[Author]] = {
-//    db.run(authors.sortBy(_.id).result.map(println))
+//    authors.sortBy(_.lastName).result.statements.foreach(println)
     db.run(authors.sortBy(_.lastName).result).map { row =>
       row.map((x) => Author(x.id, x.firstName, x.lastName))
     }
   }
 
   def count(implicit db: Database): Future[Int] = {
+//    Query(authors.length).result.head.statements.foreach(println)
     db.run(Query(authors.length).result.head)
   }
 
   def delete(id: Int)(implicit db: Database) = {
+//    authors.filter(_.id === id).delete.statements.foreach(println)
     db.run(authors.filter(_.id === id).delete)
   }
 
   def update(author: Author)(implicit db: Database) = {
     val copied = author.copy()
+//    authors.filter(_.id === copied.id).update(copied).statements.foreach(println)
     db.run(authors.filter(_.id === copied.id).update(copied))
   }
 
