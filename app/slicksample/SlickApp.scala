@@ -1,7 +1,7 @@
 package slicksample
 
 import slick.driver.H2Driver.api._
-import slicksample.entity.{BookEntity, PublisherEntity, AuthorEntity}
+import slicksample.entity.{AuthorBookTable, BookEntity, PublisherEntity, AuthorEntity}
 import slicksample.model.{Book, Publisher, Author}
 
 import scala.concurrent.duration.Duration
@@ -18,11 +18,13 @@ object SlickApp extends App {
     AuthorEntity.authors.schema.create.statements.foreach(println)
     PublisherEntity.publishers.schema.create.statements.foreach(println)
     BookEntity.books.schema.create.statements.foreach(println)
+    AuthorBookTable.authorBooks.schema.create.statements.foreach(println)
 
     val setupAction: DBIO[Unit] = DBIO.seq(
       AuthorEntity.authors.schema.create,
       PublisherEntity.publishers.schema.create,
       BookEntity.books.schema.create,
+      AuthorBookTable.authorBooks.schema.create,
 
       // Insert some authors
       AuthorEntity.authors += Author(firstName = "Mark", lastName = "Twain"),
@@ -126,6 +128,40 @@ object SlickApp extends App {
       BookEntity.findTupleById(1).map(println)
     }
     Await.result(f4, Duration.Inf)
+
+    val f5 = Future {
+
+      val bookF = BookEntity.findById(1)
+      val authorF1 = AuthorEntity.findById(2)
+      val authorF2 = AuthorEntity.findById(3)
+      val authorF3 = AuthorEntity.findById(4)
+
+      val future = for {
+        book <- bookF
+        author1 <- authorF1
+        author2 <- authorF2
+        author3 <- authorF3
+      } yield ((book.get, List(author1.get, author2.get, author3.get)))
+
+      future.flatMap { tuple =>
+
+        for (author <- tuple._2) {
+          AuthorBookTable.create(author.id.get, tuple._1.id.get)
+        }
+//        AuthorBookTable.all.map(println)
+//        AuthorBookTable.findTupleByBookId(1).map(println)
+        AuthorBookTable.findTupleByBookId3(1).map(println)
+        Future(1)
+      }
+    } andThen {
+        case _ =>
+
+      //      AuthorBookTable.findTupleByBookId(1).map(println)
+            AuthorBookTable.findTupleByBookId2(1).map(println)
+        AuthorBookTable.all.map(println)
+    }
+    Await.result(f5, Duration.Inf)
+
 
   } finally db.close
 }
