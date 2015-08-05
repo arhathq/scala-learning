@@ -1,10 +1,10 @@
 package slicksample.entity
 
 import slick.driver.H2Driver.api._
-import slicksample.model.{Publisher, Author, Book}
+import slicksample.model.{Author, Book, Publisher}
 
-import scala.collection.Seq
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.{Seq, mutable}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -71,7 +71,7 @@ object AuthorBookTable {
     }
   }
 
-  def findTupleByBookId3(bookId: Int)(implicit db: Database): Future[List[(Book, Publisher, Author)]] = {
+  def findTupleByBookId3(bookId: Int)(implicit db: Database): Future[List[(Book, Publisher, mutable.Set[Author])]] = {
     val q = BookEntity.books.filter(b => b.id === bookId).flatMap { b =>
       AuthorBookTable.authorBooks.filter(ab => ab.bookId === b.id).flatMap { ab =>
         AuthorEntity.authors.filter(a => a.id === ab.authorId).flatMap { a =>
@@ -85,13 +85,20 @@ object AuthorBookTable {
     q.result.statements.foreach(println)
 
     db.run(q.result).map( seq => {
-      val result: ArrayBuffer[(Book, Publisher, Author)] = ArrayBuffer()
+
+      val m: mutable.Map[Any, (Book, Publisher, mutable.Set[Author])] = mutable.Map()
+
       for (row <- seq) {
         row match {
-          case ((bid, t), (pid, n), (aid, fn, ln)) => result += ((Book(Some(bid) , t), Publisher(Some(pid), n), Author(Some(aid), fn, ln)))
+          case ((bid, t), (pid, n), (aid, fn, ln)) => {
+            val r = m.getOrElse(bid, (Book(Some(bid), t), Publisher(Some(pid), n), mutable.Set[Author]()))
+            r._3 += Author(Some(aid), fn, ln)
+            m += (bid -> r)
+          }
         }
       }
-      result.toList
+      m.values.toList
+
     })
 
 //    Future((Book(title = "Hand Book"), List()))

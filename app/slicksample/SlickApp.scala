@@ -34,19 +34,19 @@ object SlickApp extends App {
 
     val setupFuture: Future[Unit] = db.run(setupAction)
     val f = setupFuture.flatMap { _ =>
+      println("\n---------- Session1 ----------")
 
       val plainQuery = sql"select * from AUTHOR".as[(Int, String, String)]
       db.run(plainQuery).map(println)
 
     }. flatMap { _ =>
+      println("\n---------- Session2 ----------")
 
       val plainQuery = sql"select * from AUTHOR".as[(Int, String, String)]
       db.run(plainQuery).map((v) => v.map((x) => Author(Option(x._1), x._2, x._3))).map(println)
 
-    }
-    Await.result(f, Duration.Inf)
-
-    val f1 = Future {
+    }.flatMap { _ =>
+      println("\n---------- Session3 ----------")
 
       AuthorEntity.create(Author(firstName = "Albert", lastName = "Enstein"))
       AuthorEntity.all.map(println)
@@ -56,6 +56,8 @@ object SlickApp extends App {
       AuthorEntity.count.map(println)
 
     }.flatMap { _ =>
+
+      println("\n---------- Session4 ----------")
 
       val authorId = 4
       val albert = AuthorEntity.findById(authorId)
@@ -73,14 +75,16 @@ object SlickApp extends App {
         }
       }
 
-    }
-    Await.result(f1, Duration.Inf)
+    }. flatMap { _ =>
 
-    val f2 = Future {
+      println("\n---------- Session5 ----------")
+
       PublisherEntity.create(Publisher(name = "O'Reily"))
       PublisherEntity.all().map(println)
 
     }. flatMap { _ =>
+
+      println("\n---------- Session6 ----------")
 
       val publisherId = 1
 
@@ -103,33 +107,34 @@ object SlickApp extends App {
           Future(0)
         }
       }
-    }
-    Await.result(f2, Duration.Inf)
+    }.flatMap { _ =>
 
+      println("\n---------- Session7 ----------")
 
-    val profile: slick.driver.JdbcProfile = slick.driver.H2Driver
+      import slick.driver.H2Driver.simple._
 
-    import profile.simple._
+      db.withSession { implicit session =>
+        val q = for {
+          b <- BookEntity.books
+          p <- b.publisher
+          if b.id === 1
+        } yield (p.name, b.title)
 
-    db.withSession { implicit session =>
-      val q = for {
-        b <- BookEntity.books
-        p <- b.publisher
-        if b.id === 1
-      } yield (p.name, b.title)
+        println(q.selectStatement)
+        println(q.run)
+      }
+      Future(0)
 
-      println(q.selectStatement)
-      println(q.run)
+    }.flatMap { _ =>
 
-    }
+      println("\n---------- Session8 ----------")
 
-    val f4 = Future {
       BookEntity.findTupleById(3).map(println)
       BookEntity.findTupleById(1).map(println)
-    }
-    Await.result(f4, Duration.Inf)
 
-    val f5 = Future {
+    }.flatMap { _ =>
+
+      println("\n---------- Session9 ----------")
 
       val bookF = BookEntity.findById(1)
       val authorF1 = AuthorEntity.findById(2)
@@ -148,20 +153,22 @@ object SlickApp extends App {
         for (author <- tuple._2) {
           AuthorBookTable.create(author.id.get, tuple._1.id.get)
         }
-//        AuthorBookTable.all.map(println)
-//        AuthorBookTable.findTupleByBookId(1).map(println)
-        AuthorBookTable.findTupleByBookId3(1).map(println)
         Future(1)
       }
-    } andThen {
-        case _ =>
+//      AuthorBookTable.all.map(println)
+//      AuthorBookTable.findTupleByBookId(1).map(println)
+      AuthorBookTable.findTupleByBookId3(1).map(println)
 
-      //      AuthorBookTable.findTupleByBookId(1).map(println)
-            AuthorBookTable.findTupleByBookId2(1).map(println)
-        AuthorBookTable.all.map(println)
+    }.flatMap { _ =>
+
+      println("\n---------- Session10 ----------")
+
+      AuthorBookTable.findTupleByBookId(1).map(println)
+      AuthorBookTable.findTupleByBookId2(1).map(println)
+      AuthorBookTable.all.map(println)
+
     }
-    Await.result(f5, Duration.Inf)
-
+    Await.result(f, Duration.Inf)
 
   } finally db.close
 }
